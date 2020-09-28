@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: c
+  labels:
+    app: pod-c
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: pod-c
+  template:
+    metadata:
+      labels:
+        app: pod-c
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: c
+spec:
+  selector:
+    app: pod-c
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 80
+  type: LoadBalancer
+  loadBalancerSourceRanges:
+    - 5.9.116.90/32 # Allowed external IP
+---
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: c-allow
+spec:
+  podSelector:
+    matchLabels:
+      app: pod-c
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: pod-a
+  - from:
+    - ipBlock:
+        cidr: 195.154.69.15/32 # Public IP of load balancer, doesn't need to be exact
